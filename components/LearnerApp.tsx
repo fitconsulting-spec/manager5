@@ -252,7 +252,7 @@ export default function LearnerApp() {
       <div style={{ background: C.card, borderBottom: `1px solid ${C.border}`, padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
         <div>
           <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", color: C.ink }}>Manager<span style={{ color: C.accent }}>5</span></div>
-          <div style={{ fontSize: 10, color: C.sub, fontFamily: "'DM Sans',sans-serif", letterSpacing: "0.06em" }}>新任管理職のための5分学習</div>
+          <div style={{ fontSize: 10, color: C.sub, fontFamily: "'DM Sans',sans-serif", letterSpacing: "0.06em" }}>新任マネージャー成長アプリ</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, background: C.accentLight, borderRadius: 20, padding: "5px 12px" }}>
@@ -276,8 +276,8 @@ export default function LearnerApp() {
         {tab === "home" && (
           <div>
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", marginBottom: 4 }}>おはようございます 👋</div>
-              <div style={{ fontSize: 14, color: C.sub, fontFamily: "'DM Sans',sans-serif" }}>今日も5分だけ、一緒に成長しましょう</div>
+              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", marginBottom: 4 }}>今日の経験を明日のマネジメント力へ 👋</div>
+              <div style={{ fontSize: 14, color: C.sub, fontFamily: "'DM Sans',sans-serif" }}>管理職としての成長は日々の小さな振り返りから！迷い、気づき、挑戦を記録しよう。</div>
             </div>
 
             {/* Progress */}
