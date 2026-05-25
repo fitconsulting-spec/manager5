@@ -75,12 +75,16 @@ const inputStyle: React.CSSProperties = {
 // ── メイン管理者アプリ ────────────────────────────────
 export default function AdminApp() {
   type AdminStats = { completedScenarios: number; checkedToday: number; reflectionCount: number }
+  type ModalType = "scenarios" | "habits" | "reflections"
 
   const [view, setView] = useState<"list" | "detail" | "preview">("list")
   const [users, setUsers] = useState<User[]>([])
   const [adminStats, setAdminStats] = useState<Record<string, AdminStats>>({})
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [modal, setModal] = useState<{ userId: string; type: ModalType; userName: string } | null>(null)
+  const [modalItems, setModalItems] = useState<any[]>([])
+  const [modalLoading, setModalLoading] = useState(false)
   const [detailTab, setDetailTab] = useState<"scenario" | "habit">("scenario")
   const [showAddUser, setShowAddUser] = useState(false)
   const [newUserForm, setNewUserForm] = useState({ name: "", role: "", weakness: "", color: "#6366F1" })
@@ -196,6 +200,28 @@ export default function AdminApp() {
     }
     setNewUserForm({ name: "", role: "", weakness: "", color: "#6366F1" })
     setShowAddUser(false)
+  }
+
+  const openModal = async (userId: string, userName: string, type: ModalType) => {
+    setModal({ userId, type, userName })
+    setModalLoading(true)
+    setModalItems([])
+    try {
+      if (type === "scenarios") {
+        const ids = await storage.getCompletedScenarioIds(userId)
+        setModalItems(ALL_SCENARIOS.filter((s) => ids.includes(s.id)))
+      } else if (type === "habits") {
+        const habits = await storage.getTodayCheckedHabits(userId)
+        setModalItems(habits)
+      } else {
+        const reflections = await storage.getUserReflections(userId)
+        setModalItems(reflections)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setModalLoading(false)
+    }
   }
 
   const filteredScenarios = ALL_SCENARIOS.filter(
@@ -507,24 +533,32 @@ export default function AdminApp() {
                             value: `${st.reflectionCount}件`,
                             color: C.purple,
                           },
-                        ].map((item) => (
-                          <div
-                            key={item.label}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 4,
-                              background: "#252D3F",
-                              borderRadius: 6,
-                              padding: "4px 8px",
-                              fontSize: 11,
-                            }}
-                          >
-                            <span>{item.icon}</span>
-                            <span style={{ color: C.sub }}>{item.label}</span>
-                            <span style={{ fontWeight: 700, color: item.color }}>{item.value}</span>
-                          </div>
-                        ))}
+                        ].map((item) => {
+                          const clickable = item.label !== "連続"
+                          const modalType = item.label === "完了" ? "scenarios" : item.label === "今日" ? "habits" : item.label === "振り返り" ? "reflections" : null
+                          return (
+                            <div
+                              key={item.label}
+                              onClick={clickable && modalType ? (e) => { e.stopPropagation(); openModal(u.id, u.name, modalType as ModalType) } : undefined}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                                background: "#252D3F",
+                                borderRadius: 6,
+                                padding: "4px 8px",
+                                fontSize: 11,
+                                cursor: clickable ? "pointer" : "default",
+                                transition: "opacity 0.15s",
+                              }}
+                            >
+                              <span>{item.icon}</span>
+                              <span style={{ color: C.sub }}>{item.label}</span>
+                              <span style={{ fontWeight: 700, color: item.color }}>{item.value}</span>
+                              {clickable && <span style={{ color: C.sub, fontSize: 9 }}>▶</span>}
+                            </div>
+                          )
+                        })}
                       </div>
                     )
                   })()}
@@ -1244,6 +1278,89 @@ export default function AdminApp() {
           </div>
         )}
       </div>
+
+      {/* 詳細モーダル */}
+      {modal && (
+        <div
+          onClick={() => setModal(null)}
+          style={{ position: "fixed", inset: 0, background: "#00000099", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16, padding: 28, width: 480, maxWidth: "90vw", maxHeight: "80vh", display: "flex", flexDirection: "column" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>
+                  {modal.type === "scenarios" ? "✅ 完了シナリオ" : modal.type === "habits" ? "📅 今日の習慣チェック" : "📝 振り返り"}
+                </div>
+                <div style={{ fontSize: 11, color: C.sub, marginTop: 2 }}>{modal.userName}</div>
+              </div>
+              <button onClick={() => setModal(null)} style={{ background: "none", border: "none", color: C.sub, fontSize: 18, cursor: "pointer" }}>✕</button>
+            </div>
+
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {modalLoading ? (
+                <div style={{ textAlign: "center", color: C.sub, padding: 32, fontSize: 13 }}>読み込み中...</div>
+              ) : modalItems.length === 0 ? (
+                <div style={{ textAlign: "center", color: C.sub, padding: 32, fontSize: 13 }}>データがありません</div>
+              ) : modal.type === "scenarios" ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {modalItems.map((s: any) => (
+                    <div key={s.id} style={{ ...cardBase({ padding: 12 }), display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>✓</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{s.title}</div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <span style={{ fontSize: 10, color: C.sub, background: "#252D3F", padding: "1px 6px", borderRadius: 4 }}>{s.tag}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: DIFFICULTY_COLOR[s.difficulty] }}>{s.difficulty}</span>
+                          <span style={{ fontSize: 10, color: C.sub }}>⏱ {s.time}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : modal.type === "habits" ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {modalItems.map((h: any, i: number) => (
+                    <div key={i} style={{ ...cardBase({ padding: 12 }), display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: C.greenDim, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{h.icon}</div>
+                      <div style={{ flex: 1, fontSize: 13 }}>{h.label}</div>
+                      <span style={{ fontSize: 10, color: C.sub, background: "#252D3F", padding: "2px 7px", borderRadius: 4 }}>{h.category}</span>
+                      <span style={{ fontSize: 10, color: h.type === "daily" ? C.green : C.purple, background: h.type === "daily" ? C.greenDim : C.purpleDim, padding: "2px 7px", borderRadius: 4 }}>{h.type === "daily" ? "日次" : "週次"}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {modalItems.map((r: any) => (
+                    <div key={r.id} style={cardBase({ padding: 14 })}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          {[1,2,3,4,5].map((n) => (
+                            <span key={n} style={{ fontSize: 14, opacity: n <= r.mood ? 1 : 0.25 }}>
+                              {n <= 2 ? "😞" : n === 3 ? "😐" : n === 4 ? "😊" : "😄"}
+                            </span>
+                          ))}
+                        </div>
+                        <span style={{ fontSize: 11, color: C.sub }}>{r.date}</span>
+                      </div>
+                      <div style={{ fontSize: 13, color: C.ink, lineHeight: 1.6, marginBottom: 8 }}>{r.text}</div>
+                      {r.tags?.length > 0 && (
+                        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                          {r.tags.map((tag: string) => (
+                            <span key={tag} style={{ fontSize: 10, color: C.accent, background: C.accentDim, padding: "2px 7px", borderRadius: 4 }}>{tag}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add User Modal */}
       {showAddUser && (

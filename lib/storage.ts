@@ -280,6 +280,45 @@ export const storage = {
     if (error) throw error
   },
 
+  // ── 管理者パネル用 詳細取得 ──────────────────────────
+  async getCompletedScenarioIds(userId: string): Promise<number[]> {
+    const { data, error } = await supabase
+      .from("user_scenarios")
+      .select("scenario_id")
+      .eq("user_id", userId)
+      .eq("completed", true)
+    if (error) throw error
+    return (data ?? []).map((r: any) => r.scenario_id)
+  },
+
+  async getTodayCheckedHabits(userId: string): Promise<Array<{ icon: string; label: string; type: string; category: string }>> {
+    const { data, error } = await supabase
+      .from("habit_logs")
+      .select("user_habits(habit_id, icon, label, category, type, is_custom, habits(icon, label, category))")
+      .eq("user_id", userId)
+      .eq("log_date", todayStr())
+    if (error) throw error
+    return (data ?? []).map((log: any) => {
+      const uh = log.user_habits
+      if (!uh) return null
+      if (uh.is_custom) return { icon: uh.icon ?? "✏️", label: uh.label ?? "", type: uh.type, category: "カスタム" }
+      const h = uh.habits
+      return { icon: h?.icon ?? "✅", label: h?.label ?? uh.habit_id, type: uh.type, category: h?.category ?? "" }
+    }).filter(Boolean) as Array<{ icon: string; label: string; type: string; category: string }>
+  },
+
+  async getUserReflections(userId: string): Promise<Reflection[]> {
+    const { data, error } = await supabase
+      .from("reflections")
+      .select("id, reflected_at, text, tags, mood")
+      .eq("user_id", userId)
+      .order("reflected_at", { ascending: false })
+    if (error) throw error
+    return (data ?? []).map((r: any) => ({
+      id: r.id, date: r.reflected_at, text: r.text, tags: r.tags as string[], mood: r.mood,
+    }))
+  },
+
   // ── 管理者パネル用 全ユーザー集計 ────────────────────
   async getAdminStats(): Promise<Record<string, { completedScenarios: number; checkedToday: number; reflectionCount: number }>> {
     const today = todayStr()
