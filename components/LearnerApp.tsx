@@ -213,7 +213,7 @@ export default function LearnerApp() {
 
   const saveReflection = async () => {
     if (!reflectionText.trim()) return
-    const draft = { date: today, text: reflectionText, tags: reflectionTags, mood: reflectionMood }
+    const draft = { date: todayStr(), text: reflectionText, tags: reflectionTags, mood: reflectionMood }
     // 楽観的更新（仮IDで先にUI追加）
     const tempRef: Reflection = { id: `temp_${Date.now()}`, ...draft }
     setLearnerData((prev) => prev ? { ...prev, reflections: [tempRef, ...prev.reflections] } : prev)
