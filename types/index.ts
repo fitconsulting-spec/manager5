@@ -40,6 +40,7 @@ export interface User {
   weeklyHabits: string[]
   customDailyHabits: Habit[]
   customWeeklyHabits: Habit[]
+  streak: number
 }
 
 export interface Reflection {

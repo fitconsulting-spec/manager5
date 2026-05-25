@@ -74,8 +74,11 @@ const inputStyle: React.CSSProperties = {
 
 // ── メイン管理者アプリ ────────────────────────────────
 export default function AdminApp() {
+  type AdminStats = { completedScenarios: number; checkedToday: number; reflectionCount: number }
+
   const [view, setView] = useState<"list" | "detail" | "preview">("list")
   const [users, setUsers] = useState<User[]>([])
+  const [adminStats, setAdminStats] = useState<Record<string, AdminStats>>({})
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [detailTab, setDetailTab] = useState<"scenario" | "habit">("scenario")
@@ -88,8 +91,9 @@ export default function AdminApp() {
   useEffect(() => {
     ;(async () => {
       try {
-        const data = await storage.getUsers()
+        const [data, stats] = await Promise.all([storage.getUsers(), storage.getAdminStats()])
         setUsers(data)
+        setAdminStats(stats)
       } catch (e) {
         console.error(e)
       } finally {
@@ -423,7 +427,7 @@ export default function AdminApp() {
                     </div>
                   )}
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
                     {[
                       {
                         label: "シナリオ",
@@ -471,6 +475,59 @@ export default function AdminApp() {
                       </div>
                     ))}
                   </div>
+
+                  {/* 進捗ステータス */}
+                  {(() => {
+                    const st = adminStats[u.id] ?? { completedScenarios: 0, checkedToday: 0, reflectionCount: 0 }
+                    const totalDaily = u.dailyHabits.length + u.customDailyHabits.length
+                    return (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", borderTop: `1px solid ${C.border}`, paddingTop: 10 }}>
+                        {[
+                          {
+                            icon: "✅",
+                            label: "完了",
+                            value: `${st.completedScenarios}/${u.scenarios.length}シナリオ`,
+                            color: C.accent,
+                          },
+                          {
+                            icon: "📅",
+                            label: "今日",
+                            value: `${st.checkedToday}/${totalDaily}習慣`,
+                            color: C.green,
+                          },
+                          {
+                            icon: "🔥",
+                            label: "連続",
+                            value: `${u.streak}日`,
+                            color: "#FB923C",
+                          },
+                          {
+                            icon: "📝",
+                            label: "振り返り",
+                            value: `${st.reflectionCount}件`,
+                            color: C.purple,
+                          },
+                        ].map((item) => (
+                          <div
+                            key={item.label}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                              background: "#252D3F",
+                              borderRadius: 6,
+                              padding: "4px 8px",
+                              fontSize: 11,
+                            }}
+                          >
+                            <span>{item.icon}</span>
+                            <span style={{ color: C.sub }}>{item.label}</span>
+                            <span style={{ fontWeight: 700, color: item.color }}>{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })()}
                 </div>
               ))}
             </div>

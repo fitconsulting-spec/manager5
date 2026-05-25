@@ -66,6 +66,7 @@ function mapUser(row: DbUserRow): User {
     customWeeklyHabits: uh
       .filter((h) => h.type === "weekly" && h.is_custom)
       .map((h) => ({ id: h.id, icon: h.icon!, label: h.label!, category: h.category! })),
+    streak: row.streak_count,
   }
 }
 
@@ -277,6 +278,36 @@ export const storage = {
       .update({ streak_count: count, last_checked_date: todayStr() })
       .eq("id", userId)
     if (error) throw error
+  },
+
+  // ── 管理者パネル用 全ユーザー集計 ────────────────────
+  async getAdminStats(): Promise<Record<string, { completedScenarios: number; checkedToday: number; reflectionCount: number }>> {
+    const today = todayStr()
+    const [scenariosRes, logsRes, reflRes] = await Promise.all([
+      supabase.from("user_scenarios").select("user_id, completed"),
+      supabase.from("habit_logs").select("user_id").eq("log_date", today),
+      supabase.from("reflections").select("user_id"),
+    ])
+
+    const stats: Record<string, { completedScenarios: number; checkedToday: number; reflectionCount: number }> = {}
+    const ensure = (id: string) => {
+      if (!stats[id]) stats[id] = { completedScenarios: 0, checkedToday: 0, reflectionCount: 0 }
+    }
+
+    for (const row of scenariosRes.data ?? []) {
+      ensure(row.user_id)
+      if (row.completed) stats[row.user_id].completedScenarios++
+    }
+    for (const row of logsRes.data ?? []) {
+      ensure(row.user_id)
+      stats[row.user_id].checkedToday++
+    }
+    for (const row of reflRes.data ?? []) {
+      ensure(row.user_id)
+      stats[row.user_id].reflectionCount++
+    }
+
+    return stats
   },
 }
 
