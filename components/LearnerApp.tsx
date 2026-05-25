@@ -514,7 +514,7 @@ export default function LearnerApp() {
                             {checked ? "✓" : h.icon}
                           </div>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 14, fontFamily: "'DM Sans','Noto Sans JP',sans-serif", lineHeight: 1.4, textDecoration: checked ? "line-through" : "none", color: checked ? C.sub : C.ink }}>
+                            <div style={{ fontSize: 14, fontFamily: "'DM Sans','Noto Sans JP',sans-serif", lineHeight: 1.4, textDecoration: "none", color: checked ? C.sub : C.ink }}>
                               {h.label}
                             </div>
                             <div style={{ fontSize: 10, color: C.sub, fontFamily: "'DM Sans',sans-serif", marginTop: 2 }}>{h.category}</div>
@@ -550,7 +550,7 @@ export default function LearnerApp() {
                             {checked ? "✓" : h.icon}
                           </div>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 14, fontFamily: "'DM Sans','Noto Sans JP',sans-serif", lineHeight: 1.4, textDecoration: checked ? "line-through" : "none", color: checked ? C.sub : C.ink }}>{h.label}</div>
+                            <div style={{ fontSize: 14, fontFamily: "'DM Sans','Noto Sans JP',sans-serif", lineHeight: 1.4, textDecoration: "none", color: checked ? C.sub : C.ink }}>{h.label}</div>
                             <div style={{ fontSize: 10, color: C.blue, fontFamily: "'DM Sans',sans-serif", marginTop: 2, fontWeight: 600 }}>週1回 · {h.category}</div>
                           </div>
                         </div>
