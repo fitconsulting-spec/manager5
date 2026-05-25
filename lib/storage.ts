@@ -271,6 +271,17 @@ export const storage = {
     return { id: data.id, date: data.reflected_at, text: data.text, tags: data.tags as string[], mood: data.mood }
   },
 
+  // ── 最終チェック日取得 ────────────────────────────────
+  async getLastCheckedDate(userId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from("users")
+      .select("last_checked_date")
+      .eq("id", userId)
+      .single()
+    if (error) throw error
+    return data?.last_checked_date ?? null
+  },
+
   // ── ストリーク更新 ────────────────────────────────────
   async updateStreak(userId: string, count: number): Promise<void> {
     const { error } = await supabase

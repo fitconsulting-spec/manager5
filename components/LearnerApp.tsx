@@ -206,6 +206,25 @@ export default function LearnerApp() {
     // Supabase sync
     if (!checked) {
       storage.checkHabit(activeUser.id, h.id, type).catch(console.error)
+      // 日次習慣を初めてチェックした日のみストリークを更新
+      if (type === "daily") {
+        const alreadyCheckedToday = Object.keys(learnerData.checkedDaily).length > 0
+        if (!alreadyCheckedToday) {
+          const today = todayStr()
+          storage.getLastCheckedDate(activeUser.id).then((lastDate) => {
+            const yesterday = new Date()
+            yesterday.setDate(yesterday.getDate() - 1)
+            const yesterdayStr = yesterday.toISOString().slice(0, 10)
+            const newStreak = lastDate === yesterdayStr
+              ? learnerData.habitStreak + 1
+              : lastDate === today
+              ? learnerData.habitStreak
+              : 1
+            setLearnerData((prev) => prev ? { ...prev, habitStreak: newStreak } : prev)
+            storage.updateStreak(activeUser.id, newStreak).catch(console.error)
+          }).catch(console.error)
+        }
+      }
     } else {
       storage.uncheckHabit(activeUser.id, h.id, type).catch(console.error)
     }
